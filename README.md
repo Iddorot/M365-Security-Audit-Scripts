@@ -50,4 +50,3 @@ Feel free to open an **Issue** or submit a **Pull Request**.
 ---
 
 *🤖 Generated with the assistance of [Claude](https://claude.ai) by Anthropic*
-```
