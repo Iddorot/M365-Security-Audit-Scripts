@@ -1,0 +1,5 @@
+{
+  "adminUrl": "https://<tenantName>-admin.sharepoint.com",
+  "tenantName": "<tenantName>",
+  "pnpClientID": "<pnpClientID>"
+}

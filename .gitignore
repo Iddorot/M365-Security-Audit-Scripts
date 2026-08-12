@@ -1,0 +1,9 @@
+# Ignore sensitive files
+config.json
+*.xml
+*.cer
+*.pfx
+
+# Ignore output reports
+*.xlsx
+*.csv
