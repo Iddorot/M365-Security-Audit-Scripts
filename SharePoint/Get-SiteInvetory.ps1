@@ -134,8 +134,8 @@ foreach ($site in $allSites) {
     $entraGroupCount     = "N/A"
     $fileCount           = "N/A"
     $uniquePermsCount    = "N/A"
-    $peopleInOrgLinks    = "Requires Graph API"
-    $anyoneLinks         = "Requires Graph API"
+    $peopleInOrgLinks    = "N/A"
+    $anyoneLinks         = "N/A"
     $eeeuCount           = "N/A"
     $everyoneCount       = "N/A"
 
@@ -208,14 +208,24 @@ foreach ($site in $allSites) {
                 } catch {}
             }
 
-            # PeopleInYourOrg / Anyone link counts require Microsoft Graph API
-            # Endpoint: GET /v1.0/sites/{siteId}/permissions
-            # Uncomment and implement below once Graph access is available:
-            #
-            # $graphSiteId      = (Get-PnPSite -Connection $siteConn).Id
-            # $permissions      = Invoke-PnPGraphMethod -Url "sites/$graphSiteId/permissions" -Connection $siteConn
-            # $peopleInOrgLinks = ($permissions.value | Where-Object { $_.link.scope -eq "organization" }).Count
-            # $anyoneLinks      = ($permissions.value | Where-Object { $_.link.scope -eq "anonymous"    }).Count
+            #── PeopleInYourOrg / Anyone link counts (Microsoft Graph) ──────
+            # Graph's /sites/{id}/permissions needs the composite site ID
+            # "hostname,siteCollectionId,webId" — Get-PnPSite's .Id alone
+            # is not a valid Graph site ID.
+            try {
+                $spSite       = Get-PnPSite -Connection $siteConn -Includes Id
+                $spWeb        = Get-PnPWeb  -Connection $siteConn -Includes Id
+                $hostName     = ([uri]$site.Url).Host
+                $graphSiteId  = "$hostName,$($spSite.Id),$($spWeb.Id)"
+
+                $permissions      = Invoke-PnPGraphMethod -Url "sites/$graphSiteId/permissions" -Connection $siteConn -ErrorAction Stop
+                $peopleInOrgLinks = ($permissions.value | Where-Object { $_.link.scope -eq "organization" }).Count
+                $anyoneLinks      = ($permissions.value | Where-Object { $_.link.scope -eq "anonymous"    }).Count
+            } catch {
+                Write-SPOLog "Graph permissions lookup failed for $siteUrl : $_" -Level Warning
+                $peopleInOrgLinks = "Graph API Error"
+                $anyoneLinks      = "Graph API Error"
+            }
 
         } catch {
             Write-SPOLog "Error processing $siteUrl : $_" -Level Warning
