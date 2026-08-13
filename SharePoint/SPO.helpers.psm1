@@ -348,6 +348,7 @@ function Connect-SPOSite {
         try {
             $token = Get-PnPAccessToken -Connection $ExistingConnection
             $conn  = Connect-PnPOnline -Url         $SiteUrl `
+                                       -ClientId    $Config.ClientId `
                                        -AccessToken $token `
                                        -ReturnConnection
             return $conn
