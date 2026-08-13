@@ -247,8 +247,7 @@ function Connect-SPOAdmin {
         [string]$AuthMethod = $script:ModuleDefaults.AuthMethod,
 
         [string]$Thumbprint      = "",
-        [string]$CertificatePath = "",
-        [System.Security.SecureString]$CertificatePassword = $null
+        [string]$CertificatePath = ""
     )
 
     Write-SPOLog "Connecting to $($Config.AdminUrl) using [$AuthMethod]..." -Level Info
@@ -269,20 +268,11 @@ function Connect-SPOAdmin {
                                   -ReturnConnection
             }
             "CertificateFile" {
-                if ($CertificatePassword) {
-                    Connect-PnPOnline -Url                 $Config.AdminUrl `
-                                      -ClientId            $Config.ClientId `
-                                      -CertificatePath     $CertificatePath `
-                                      -CertificatePassword $CertificatePassword `
-                                      -Tenant              "$($Config.TenantName).onmicrosoft.com" `
-                                      -ReturnConnection
-                } else {
-                    Connect-PnPOnline -Url             $Config.AdminUrl `
-                                      -ClientId        $Config.ClientId `
-                                      -CertificatePath $CertificatePath `
-                                      -Tenant          "$($Config.TenantName).onmicrosoft.com" `
-                                      -ReturnConnection
-                }
+                Connect-PnPOnline -Url             $Config.AdminUrl `
+                                  -ClientId        $Config.ClientId `
+                                  -CertificatePath $CertificatePath `
+                                  -Tenant          "$($Config.TenantName).onmicrosoft.com" `
+                                  -ReturnConnection
             }
         }
 
@@ -338,8 +328,7 @@ function Connect-SPOSite {
         [string]$AuthMethod = $script:ModuleDefaults.AuthMethod,
 
         [string]$Thumbprint      = "",
-        [string]$CertificatePath = "",
-        [System.Security.SecureString]$CertificatePassword = $null
+        [string]$CertificatePath = ""
     )
 
     try {
@@ -358,20 +347,11 @@ function Connect-SPOSite {
                                   -ReturnConnection
             }
             "CertificateFile" {
-                if ($CertificatePassword) {
-                    Connect-PnPOnline -Url                 $SiteUrl `
-                                      -ClientId            $Config.ClientId `
-                                      -CertificatePath     $CertificatePath `
-                                      -CertificatePassword $CertificatePassword `
-                                      -Tenant              "$($Config.TenantName).onmicrosoft.com" `
-                                      -ReturnConnection
-                } else {
-                    Connect-PnPOnline -Url             $SiteUrl `
-                                      -ClientId        $Config.ClientId `
-                                      -CertificatePath $CertificatePath `
-                                      -Tenant          "$($Config.TenantName).onmicrosoft.com" `
-                                      -ReturnConnection
-                }
+                Connect-PnPOnline -Url             $SiteUrl `
+                                  -ClientId        $Config.ClientId `
+                                  -CertificatePath $CertificatePath `
+                                  -Tenant          "$($Config.TenantName).onmicrosoft.com" `
+                                  -ReturnConnection
             }
         }
         return $conn
