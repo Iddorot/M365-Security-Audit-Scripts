@@ -29,6 +29,9 @@ param(
 
 #region ─── SETTINGS ─────────────────────────────────────────────────────────
 $AuthMethod             = "Interactive"   # Interactive | Certificate | CertificateFile
+$Thumbprint             = ""              # Certificate: cert thumbprint from local cert store
+$CertificatePath        = ""              # CertificateFile: path to .pfx, e.g. "$PSScriptRoot\SVC-PNP-SP.pfx"
+$CertificatePasswordEnv = "SPO_CERT_PASSWORD"  # CertificateFile: env var holding the .pfx password
 $OutputFolder           = "$env:USERPROFILE\Desktop\SPO-Reports"
 $ExcludeSystemSites     = $true
 $ExcludeOneDrive        = $true
@@ -54,6 +57,24 @@ Assert-SPOModules -Modules @{
     "PnP.PowerShell" = "2.4.0"
     "ImportExcel"    = "7.8.0"
 }
+
+$certPassword = $null
+if ($AuthMethod -eq "CertificateFile") {
+    $certPasswordPlain = [Environment]::GetEnvironmentVariable($CertificatePasswordEnv)
+    if ($certPasswordPlain) {
+        $certPassword = ConvertTo-SecureString $certPasswordPlain -AsPlainText -Force
+    } else {
+        $certPassword = Read-Host -Prompt "Certificate password for $CertificatePath" -AsSecureString
+    }
+}
+
+$connectParams = @{
+    AuthMethod          = $AuthMethod
+    Thumbprint          = $Thumbprint
+    CertificatePath     = $CertificatePath
+    CertificatePassword = $certPassword
+}
+
 #region ─── GET ALL SITES ────────────────────────────────────────────────────
 Write-SPOLog "Fetching all site collections..." -Level Section
 
@@ -62,7 +83,7 @@ if ($ExcludeOneDrive)             { $getSiteParams["IncludeOneDriveSites"] = $fa
 if ($IncludeSiteUrlFilter -ne "") { $getSiteParams["Filter"] = "Url -like '$IncludeSiteUrlFilter'" }
 
 $cfg  = Get-SPOConfig -ConfigPath $ConfigPath
-$conn = Connect-SPOAdmin -Config $cfg -AuthMethod $AuthMethod
+$conn = Connect-SPOAdmin -Config $cfg @connectParams
 
 $allSites = Get-PnPTenantSite @getSiteParams -Connection $conn | Where-Object {
     if (-not $ExcludeSystemSites) { return $true }
@@ -140,7 +161,7 @@ foreach ($site in $allSites) {
     $everyoneCount       = "N/A"
 
 
-    $siteConn = Connect-SPOSite -SiteUrl $site.Url -Config $cfg -AuthMethod $AuthMethod
+    $siteConn = Connect-SPOSite -SiteUrl $site.Url -Config $cfg @connectParams
 
     if ( $siteConn ) {
         try {
