@@ -140,10 +140,12 @@ foreach ($site in $allSites) {
     $everyoneCount       = "N/A"
 
 
-    if ( $conn ) {
+    $siteConn = Connect-SPOSite -SiteUrl $site.Url -Config $cfg -AuthMethod $AuthMethod
+
+    if ( $siteConn ) {
         try {
             #── Users ─────────────────────────────────────────────────────
-            $allUsers = Get-PnPUser -Connection  $conn  `
+            $allUsers = Get-PnPUser -Connection  $siteConn  `
                                     -WithRightsAssigned `
                                     -ErrorAction SilentlyContinue
 
@@ -164,14 +166,14 @@ foreach ($site in $allSites) {
             }).Count
 
             #── Entra group count ──────────────────────────────────────────
-            $siteGroups      = Get-PnPSiteGroup -Connection $conn -ErrorAction SilentlyContinue
+            $siteGroups      = Get-PnPSiteGroup -Connection $siteConn -ErrorAction SilentlyContinue
             $entraGroupCount = ($siteGroups | Where-Object {
                 $_.LoginName -match "c:0t\.c\|tenant\|" -or
                 $_.LoginName -match "c:0o\.c\|federateddirectoryclaimprovider\|"
             }).Count
 
             #── File count (all non-hidden document libraries) ─────────────
-            $docLibs   = Get-PnPList -Connection $conn |
+            $docLibs   = Get-PnPList -Connection $siteConn |
                          Where-Object { $_.BaseType -eq "DocumentLibrary" -and $_.Hidden -eq $false }
             $fileCount = ($docLibs | Measure-Object -Property ItemCount -Sum).Sum
             if (-not $fileCount) { $fileCount = 0 }
@@ -182,7 +184,7 @@ foreach ($site in $allSites) {
                 try {
                     $uniquePermsCount += (
                         Get-PnPListItem -List $list `
-                                        -Connection $conn `
+                                        -Connection $siteConn `
                                         -PageSize $PageSize `
                                         -ErrorAction SilentlyContinue |
                         Where-Object { $_.HasUniqueRoleAssignments -eq $true }
@@ -197,9 +199,9 @@ foreach ($site in $allSites) {
                 try {
                     $ras = Get-PnPProperty -ClientObject $list `
                                            -Property RoleAssignments `
-                                           -Connection $conn
+                                           -Connection $siteConn
                     foreach ($ra in $ras) {
-                        Get-PnPProperty -ClientObject $ra -Property Member -Connection $conn | Out-Null
+                        Get-PnPProperty -ClientObject $ra -Property Member -Connection $siteConn | Out-Null
                         if ($ra.Member.LoginName -match "spo-grid-all-users") { $eeeuCount++     }
                         if ($ra.Member.LoginName -match "c:0\(\.s\|true")     { $everyoneCount++ }
                     }
@@ -210,8 +212,8 @@ foreach ($site in $allSites) {
             # Endpoint: GET /v1.0/sites/{siteId}/permissions
             # Uncomment and implement below once Graph access is available:
             #
-            # $graphSiteId      = (Get-PnPSite -Connection $conn).Id
-            # $permissions      = Invoke-PnPGraphMethod -Url "sites/$graphSiteId/permissions" -Connection $conn
+            # $graphSiteId      = (Get-PnPSite -Connection $siteConn).Id
+            # $permissions      = Invoke-PnPGraphMethod -Url "sites/$graphSiteId/permissions" -Connection $siteConn
             # $peopleInOrgLinks = ($permissions.value | Where-Object { $_.link.scope -eq "organization" }).Count
             # $anyoneLinks      = ($permissions.value | Where-Object { $_.link.scope -eq "anonymous"    }).Count
 
@@ -219,7 +221,7 @@ foreach ($site in $allSites) {
             Write-SPOLog "Error processing $siteUrl : $_" -Level Warning
             $errors++
         } finally {
-            Disconnect-SPOSite -Connection $conn
+            Disconnect-SPOSite -Connection $siteConn
         }
     } else {
         Write-SPOLog "Skipped (could not connect): $siteUrl" -Level Warning
