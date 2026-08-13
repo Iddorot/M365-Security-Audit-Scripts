@@ -140,7 +140,7 @@ foreach ($site in $allSites) {
     $everyoneCount       = "N/A"
 
 
-    $siteConn = Connect-SPOSite -SiteUrl $site.Url -Config $cfg -AuthMethod $AuthMethod
+    $siteConn = Connect-SPOSite -SiteUrl $site.Url -Config $cfg -AuthMethod $AuthMethod -ExistingConnection $conn
 
     if ( $siteConn ) {
         try {

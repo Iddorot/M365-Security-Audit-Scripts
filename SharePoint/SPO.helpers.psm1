@@ -309,11 +309,22 @@ function Connect-SPOAdmin {
 .PARAMETER CertificatePath
     Path to .pfx file. Required only for CertificateFile auth.
 
+.PARAMETER ExistingConnection
+    Optional. An already-authenticated PnP connection (e.g. the admin
+    connection from Connect-SPOAdmin). When supplied, its access token is
+    reused to connect to SiteUrl instead of triggering a fresh interactive
+    sign-in. SPO delegated tokens are valid tenant-wide, so a token
+    acquired once covers every site collection in the tenant. Falls back
+    to a normal AuthMethod-based connection if token reuse fails.
+
 .OUTPUTS
     PnP connection object, or $null if the connection failed.
 
 .EXAMPLE
     $siteConn = Connect-SPOSite -SiteUrl "https://contoso.sharepoint.com/sites/HR" -Config $cfg
+
+.EXAMPLE
+    $siteConn = Connect-SPOSite -SiteUrl "https://contoso.sharepoint.com/sites/HR" -Config $cfg -ExistingConnection $conn
 #>
 function Connect-SPOSite {
     [CmdletBinding()]
@@ -328,8 +339,23 @@ function Connect-SPOSite {
         [string]$AuthMethod = $script:ModuleDefaults.AuthMethod,
 
         [string]$Thumbprint      = "",
-        [string]$CertificatePath = ""
+        [string]$CertificatePath = "",
+
+        $ExistingConnection = $null
     )
+
+    if ($ExistingConnection) {
+        try {
+            $token = Get-PnPAccessToken -Connection $ExistingConnection
+            $conn  = Connect-PnPOnline -Url         $SiteUrl `
+                                       -ClientId    $Config.ClientId `
+                                       -AccessToken $token `
+                                       -ReturnConnection
+            return $conn
+        } catch {
+            Write-SPOLog "Token reuse failed for $SiteUrl, falling back to $AuthMethod auth — $_" -Level Warning
+        }
+    }
 
     try {
         $conn = switch ($AuthMethod) {
