@@ -69,7 +69,7 @@ $allSites = Get-PnPTenantSite @getSiteParams -Connection $conn | Where-Object {
     $templateOk = -not ($ExcludeTemplates  | Where-Object { $_.Template -like "*$_*" })
     $urlOk      = -not ($ExcludeUrlPatterns | Where-Object { $_.Url      -match $_   })
     $templateOk -and $urlOk
-}
+} | Select-Object -First 5   # TEMP: limit to 5 sites for testing
 
 Write-SPOLog "Found $($allSites.Count) sites to process." -Level Success
 #endregion
